@@ -172,7 +172,7 @@ class PrintfCycleBoundsTestBase(startCycle: Int, endCycle: Int) extends Tutorial
       s"+print-start=${startCycle}",
       s"+print-end=${endCycle}"
     )) {
-  checkPrintCycles("synthprinttest.out0", startCycle, endCycle, linesPerCycle = 4)
+  checkPrintCycles("synthprinttest.out0", startCycle, endCycle, linesPerCycle = 5)
 }
 
 class PrintfCycleBoundsF1Test extends PrintfCycleBoundsTestBase(startCycle = 172, endCycle = 9377)
@@ -216,7 +216,8 @@ class MulticlockPrintF1Test extends TutorialSuite("MulticlockPrintfModule",
   diffSynthesizedLog("synthprinttest.out1",
     stdoutPrefix = "SYNTHESIZED_PRINT_HALFRATE ",
     synthPrefix = "SYNTHESIZED_PRINT_HALFRATE ",
-    synthLinesToDrop = 4) // Corresponds to a single cycle of extra output
+    // Corresponds to a single cycle of extra output.
+    synthLinesToDrop = 5)
 }
 
 class MulticlockAutoCounterF1Test extends TutorialSuite("MulticlockAutoCounterModule",
@@ -230,8 +231,14 @@ class TwoAddersF1Test extends TutorialSuite("TwoAdders")
 class RegfileF1Test extends TutorialSuite("Regfile")
 
 class MultiRegfileF1Test extends TutorialSuite("MultiRegfile")
+class MultiRegfileFMRF1Test extends TutorialSuite("MultiRegfileFMR") {
+  // TODO(albert-magyar): add expectedFMR once threading works for this test on dev again
+}
 
 class MultiSRAMF1Test extends TutorialSuite("MultiSRAM")
+class MultiSRAMFMRF1Test extends TutorialSuite("MultiSRAMFMR") {
+  expectedFMR(MultiRegfile.nCopiesToTime) // No comb paths -> 1:1
+}
 
 class NestedModelsF1Test extends TutorialSuite("NestedModels")
 
@@ -298,6 +305,7 @@ class CIGroupA extends Suites(
   new ChiselExampleDesigns,
   new PrintfSynthesisCITests,
   new firesim.fasedtests.CIGroupA,
+  new AutoCounterCITests
 )
 
 class CIGroupB extends Suites(

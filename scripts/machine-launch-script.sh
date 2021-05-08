@@ -9,7 +9,7 @@ echo "machine launch script started" > /home/centos/machine-launchstatus
 sudo yum install -y mosh
 sudo yum groupinstall -y "Development tools"
 sudo yum install -y gmp-devel mpfr-devel libmpc-devel zlib-devel vim git java java-devel
-curl https://bintray.com/sbt/rpm/rpm | sudo tee /etc/yum.repos.d/bintray-sbt-rpm.repo
+curl https://www.scala-sbt.org/sbt-rpm.repo | sudo tee /etc/yum.repos.d/scala-sbt-rpm.repo
 sudo yum install -y sbt texinfo gengetopt libffi-devel
 sudo yum install -y expat-devel libusb1-devel ncurses-devel cmake "perl(ExtUtils::MakeMaker)"
 sudo yum install -y inotify-tools
@@ -49,6 +49,8 @@ sudo yum -y install graphviz python-devel
 sudo yum -y install expect
 
 # these need to match what's in deploy/requirements.txt
+# last working pip version before deprecation
+sudo pip2 install --upgrade pip==20.3.4
 sudo pip2 install fabric==1.14.0
 sudo pip2 install boto3==1.6.2
 sudo pip2 install colorama==0.3.7
