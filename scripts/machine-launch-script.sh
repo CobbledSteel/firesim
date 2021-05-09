@@ -67,6 +67,9 @@ sudo pip2 install awscli==1.15.76
 
 sudo activate-global-python-argcomplete
 
+# Upgrading pip2 clobbers the pip3 installation paths.
+sudo yum reinstall -y python36-pip
+
 } 2>&1 | tee /home/centos/machine-launchstatus.log
 
 # get a regular prompt
