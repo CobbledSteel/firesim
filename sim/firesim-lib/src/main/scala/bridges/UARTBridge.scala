@@ -92,6 +92,23 @@ class UARTBridgeModule(key: UARTKey)(implicit p: Parameters) extends BridgeModul
     val txfifo = Module(new Queue(UInt(8.W), 128))
     val rxfifo = Module(new Queue(UInt(8.W), 128))
 
+    // COSIM-CODE
+    // Generate a FIFO to capture time step allocations
+    val rx_ctrl_fifo = Module(new Queue(UInt(8.W), 16))
+
+    // Initialize number of cycles 
+    val cycleBudget = RegInit(1000.U(32.W))
+
+    // Initialize amount to increment cycle budget by
+    val cycleStep   = RegInit(1000.U(32.W))
+	
+
+    // can add to budget every cycle
+    rx_ctrl_fifo.io.deq.ready := rx_ctrl_fifo.io.deq.valid
+    
+    // COSIM-CODE
+
+
     val target = hPort.hBits.uart
     // In general, your BridgeModule will not need to do work every host-cycle. In simple Bridges,
     // we can do everything in a single host-cycle -- fire captures all of the
@@ -99,10 +116,27 @@ class UARTBridgeModule(key: UARTKey)(implicit p: Parameters) extends BridgeModul
     // output token
     val fire = hPort.toHost.hValid && // We have a valid input token: toHost ~= leaving the transformed RTL
                hPort.fromHost.hReady && // We have space to enqueue a new output token
-               txfifo.io.enq.ready      // We have space to capture new TX data
+               txfifo.io.enq.ready  && (cycleBudget > 0.U(32.W))// We have space to capture new TX data
     val targetReset = fire & hPort.hBits.reset
     rxfifo.reset := reset.toBool || targetReset
     txfifo.reset := reset.toBool || targetReset
+
+    // COSIM-CODE
+
+    // Add to the cycles the tool is permitted to run forward
+    when(rx_ctrl_fifo.io.deq.valid) {
+        cycleBudget := cycleBudget + cycleStep
+    }  .elsewhen(fire) {
+        cycleBudget := cycleBudget - 1.U(32.W)
+    } .otherwise {
+        cycleBudget := cycleBudget
+    }
+
+    rx_ctrl_fifo.reset := reset.toBool || targetReset
+
+    // Count total elapsed cycles
+    val (cycleCount, testWrap) = Counter(fire, 65535 * 256)
+    // COSIM-CODE
 
     hPort.toHost.hReady := fire
     hPort.fromHost.hValid := fire
@@ -178,6 +212,10 @@ class UARTBridgeModule(key: UARTKey)(implicit p: Parameters) extends BridgeModul
     }
     rxfifo.io.deq.ready := (rxState === sRxData) && rxDataWrap && rxBaudWrap && fire
 
+    //COSIM-CODE
+    rx_ctrl_fifo.io.deq.ready := true.B;
+    //COSIM-CODE
+
     // DOC include start: UART Bridge Footer
     // Exposed the head of the queue and the valid bit as a read-only registers
     // with name "out_bits" and out_valid respectively
@@ -193,6 +231,20 @@ class UARTBridgeModule(key: UARTKey)(implicit p: Parameters) extends BridgeModul
     genWOReg(rxfifo.io.enq.bits, "in_bits")
     Pulsify(genWORegInit(rxfifo.io.enq.valid, "in_valid", false.B), pulseLength = 1)
     genROReg(rxfifo.io.enq.ready, "in_ready")
+
+    // COSIM-CODE
+    // Generate registers for reading in time step limits
+    genWOReg(rx_ctrl_fifo.io.enq.bits, "in_ctrl_bits")
+    Pulsify(genWORegInit(rx_ctrl_fifo.io.enq.valid, "in_ctrl_valid", false.B), pulseLength = 1)
+    genROReg(rx_ctrl_fifo.io.enq.ready, "in_ctrl_ready")
+
+    // Generate registers for reading total cycles that have passed
+    genROReg(cycleCount, "cycle_count")
+    genROReg(cycleBudget, "cycle_budget")
+
+    // Generate registers for writing the step amount
+    genWOReg(cycleStep, "cycle_step")
+    // COSIM-CODE
 
     // This method invocation is required to wire up all of the MMIO registers to
     // the simulation control bus (AXI4-lite)

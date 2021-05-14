@@ -5,6 +5,23 @@
 #include "serial.h"
 #include <signal.h>
 
+// COSIM-CODE
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+
+#include <unistd.h>
+#include <netdb.h> 
+
+#include <cstdlib>
+#include <cstring>
+
+#define ROBOTICS_COSIM_BUFSIZE 1024
+// COSIM-CODE
+
 // The definition of the primary constructor argument for a bridge is generated
 // by Golden Gate at compile time _iff_ the bridge is instantiated in the
 // target. As a result, all bridge driver definitions conditionally remove
@@ -38,8 +55,19 @@ class uart_t: public bridge_driver_t
         int inputfd;
         int outputfd;
         int loggingfd;
+
+        // COSIM-CODE
+        int sockfd, portno, n;
+        struct sockaddr_in serveraddr;
+        struct hostent *server;
+        char *hostname;
+        char buf[ROBOTICS_COSIM_BUFSIZE];
+        // COSIM-CODE
+
         void send();
         void recv();
+
+        void process_packet();
 };
 #endif // UARTBRIDGEMODULE_struct_guard
 
